@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type EmailService interface {
+	SendWarningEmail(email string)
+}
+
 type AuthRepo interface {
 	CreateSession(ctx context.Context, session *models.RefreshSession) error
 	UpdateSession(ctx context.Context, session *models.RefreshSession) error
@@ -19,12 +23,14 @@ type AuthRepo interface {
 type AuthService struct {
 	authRepo     AuthRepo
 	tokenManager utils.TokenManager
+	emailService EmailService
 }
 
-func NewAuthService(auth AuthRepo, token utils.TokenManager) *AuthService {
+func NewAuthService(auth AuthRepo, token utils.TokenManager, email EmailService) *AuthService {
 	return &AuthService{
 		authRepo:     auth,
 		tokenManager: token,
+		emailService: email,
 	}
 }
 
@@ -87,7 +93,12 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken, IPAddress 
 	}
 
 	if claims.IPAddress != IPAddress {
+		user, err := s.authRepo.GetUserByID(ctx, claims.UserID)
+		if err != nil {
+			return "", "", err
+		}
 
+		go s.emailService.SendWarningEmail(user.Email)
 	}
 
 	accessToken, newRefreshToken, err := s.tokenManager.NewJWT(claims.UserID, IPAddress)
