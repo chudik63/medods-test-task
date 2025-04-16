@@ -8,7 +8,6 @@ import (
 
 type AuthJWT struct {
 	Secret          string
-	Algorithm       string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 }
@@ -47,7 +46,6 @@ func NewSettings() *Config {
 	return &Config{
 		AuthJWT: AuthJWT{
 			Secret:          viper.GetString("JWT_SECRET"),
-			Algorithm:       viper.GetString("JWT_ALGORITHM"),
 			AccessTokenTTL:  viper.GetDuration("ACCESS_TOKEN_TTL"),
 			RefreshTokenTTL: viper.GetDuration("REFRESH_TOKEN_TTL"),
 		},

@@ -76,7 +76,7 @@ func (m *Manager) NewJWT(userId uint64, email, ipAddress, tokenID, role string) 
 }
 
 func (m *Manager) SignToken(claims Claims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 
 	return token.SignedString(m.secret)
 }
