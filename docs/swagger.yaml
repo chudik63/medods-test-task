@@ -6,6 +6,11 @@ definitions:
         description: Error message
         type: string
     type: object
+  internal_transport_http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
   internal_transport_http.TokenResponse:
     properties:
       access_token:
@@ -45,10 +50,44 @@ paths:
           schema:
             $ref: '#/definitions/internal_transport_http.ErrorResponse'
         "500":
-          description: Failed to create new session
+          description: An unexpected error occurred
           schema:
             $ref: '#/definitions/internal_transport_http.ErrorResponse'
       summary: Login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes token pair
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token & refresh_token
+          schema:
+            $ref: '#/definitions/internal_transport_http.TokenResponse'
+        "400":
+          description: Invalid token type
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "500":
+          description: An unexpected error occurred
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+      summary: RefreshToken
       tags:
       - auth
 securityDefinitions:

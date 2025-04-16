@@ -45,7 +45,59 @@
                         }
                     },
                     "500": {
-                        "description": "Failed to create new session",
+                        "description": "An unexpected error occurred",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refreshes token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "RefreshToken",
+                "parameters": [
+                    {
+                        "description": "Refresh Token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "access_token \u0026 refresh_token",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http.TokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token type",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/internal_transport_http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "An unexpected error occurred",
                         "schema": {
                             "$ref": "#/definitions/internal_transport_http.ErrorResponse"
                         }
@@ -60,6 +112,14 @@
             "properties": {
                 "error": {
                     "description": "Error message",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http.RefreshTokenRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
                     "type": "string"
                 }
             }
