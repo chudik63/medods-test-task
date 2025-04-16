@@ -4,9 +4,10 @@ import (
 	"time"
 )
 
-type RefreshToken struct {
+type RefreshSession struct {
 	ID        uint
 	UserID    uint64
+	IP        string
 	Token     string
 	CreatedAt time.Time
 	ExpiresAt time.Time
