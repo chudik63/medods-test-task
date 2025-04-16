@@ -9,7 +9,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost",
+    "host": "localhost:8080",
     "basePath": "/v1",
     "paths": {
         "/auth/login": {
@@ -39,7 +39,9 @@
                         "description": "access_token \u0026 refresh_token",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {

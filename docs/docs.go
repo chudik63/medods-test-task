@@ -42,7 +42,9 @@ const docTemplate = `{
                         "description": "access_token \u0026 refresh_token",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -79,7 +81,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost",
+	Host:             "localhost:8080",
 	BasePath:         "/v1",
 	Schemes:          []string{"https"},
 	Title:            "Medods",

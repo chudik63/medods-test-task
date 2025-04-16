@@ -1,5 +1,5 @@
 basePath: /v1
-host: localhost
+host: localhost:8080
 info:
   contact: {}
   description: This is the test service for providing JWT
@@ -23,7 +23,8 @@ paths:
         "200":
           description: access_token & refresh_token
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "400":
           description: User id is empty
