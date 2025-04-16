@@ -24,7 +24,7 @@ type RefreshTokenRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param user_id query string true "User GUID"
-// @Success      200 {object} map[string]interface{} "access_token & refresh_token"
+// @Success      200 {object} map[string]string "access_token & refresh_token"
 // @Failure      400 {object} map[string]string "User id is empty"
 // @Failure      500 {object} map[string]string "Failed to create new session"
 // @Router /auth/login [post]
