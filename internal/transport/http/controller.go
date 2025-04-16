@@ -1,10 +1,12 @@
 package http
 
 import (
+	"context"
 	"medods-test-task/pkg/logger"
 )
 
 type AuthService interface {
+	NewSession(ctx context.Context, userID, IPAddress string) (string, string, error)
 }
 
 type AppController struct {
