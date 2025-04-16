@@ -23,9 +23,10 @@ type RefreshTokenRequest struct {
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param user_id query string true "User GUID"
+// @Param user_id query string true "User GUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
 // @Success      200 {object} TokenResponse "access_token & refresh_token"
 // @Failure      400 {object} ErrorResponse "User id is empty"
+// @Failure      400 {object} ErrorResponse "User id must be a valid UUID"
 // @Failure      500 {object} ErrorResponse "An unexpected error occurred"
 // @Router /auth/login [post]
 func (c *AppController) Login(ctx *gin.Context) {
@@ -39,6 +40,12 @@ func (c *AppController) Login(ctx *gin.Context) {
 	if err != nil {
 		if errors.Is(err, models.ErrEmptyUserID) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "User id is empty."})
+
+			return
+		}
+
+		if errors.Is(err, models.ErrInvalidUserID) {
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "User id must be a valid UUID."})
 
 			return
 		}

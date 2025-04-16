@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"medods-test-task/internal/models"
 	"time"
 
@@ -96,6 +97,9 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 		return "", "", err
 	}
 
+	log.Print(hashedRefresh)
+	log.Print(refresh)
+
 	return access, refresh, err
 }
 
@@ -109,6 +113,9 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken, IPAddress 
 	if err != nil {
 		return "", "", err
 	}
+
+	log.Print(session.Token)
+	log.Print(refreshToken)
 
 	err = s.tokenManager.ValidateToken(refreshToken, session.Token)
 	if err != nil {

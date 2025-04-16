@@ -5,7 +5,7 @@ import "errors"
 var (
 	ErrUserNotFound           = errors.New("user with such id was not found")
 	ErrEmptyUserID            = errors.New("user id is empty")
-	ErrInvalidUserID          = errors.New("user id should be valid uuid")
+	ErrInvalidUserID          = errors.New("user id should be a valid uuid")
 	ErrSessionNotFound        = errors.New("session was not found")
 	ErrInvalidSession         = errors.New("refresh session is invalid")
 	ErrTokenExpired           = errors.New("token is expired")
