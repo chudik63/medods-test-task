@@ -6,7 +6,7 @@ import "medods-test-task/internal/app"
 // @version 1.0
 // @description This is the test service for providing JWT
 // @host localhost
-// @BasePath /
+// @BasePath /v1
 // @schemes https
 // @securityDefinitions.apikey BearerAuth
 // @in header
