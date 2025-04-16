@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"medods-test-task/internal/db/postgres"
 	"medods-test-task/internal/models"
 	"time"
@@ -18,11 +21,11 @@ func NewAuthRepo(db postgres.DB) *Auth {
 	}
 }
 
-func (r *Auth) Create(session *models.RefreshSession) error {
+func (r *Auth) CreateSession(ctx context.Context, session *models.RefreshSession) error {
 	_, err := sq.
 		Insert("refreshSessions").
-		Columns("userId", "refreshToken", "ip", "expiresAt", "createdAt").
-		Values(session.UserID, session.Token, session.IP, session.ExpiresAt.Unix(), session.CreatedAt).
+		Columns("userId", "refreshToken", "expiresAt", "createdAt").
+		Values(session.UserID, session.Token, session.ExpiresAt.Unix(), session.CreatedAt).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		Exec()
@@ -33,9 +36,32 @@ func (r *Auth) Create(session *models.RefreshSession) error {
 	return nil
 }
 
+func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
+	res, err := sq.
+		Delete("refreshSessions").
+		Where(sq.Eq{"userId": userID}).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(r.db).
+		Exec()
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return models.ErrSessionNotFound
+	}
+
+	return nil
+}
+
 func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
 	row := sq.
-		Select("id", "userId", "refreshToken", "ip", "expiresAt", "createdAt").
+		Select("id", "userId", "refreshToken", "expiresAt", "createdAt").
 		From("refreshSessions").
 		Where(sq.Eq{"refreshToken": token}).
 		PlaceholderFormat(sq.Dollar).
@@ -48,7 +74,6 @@ func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
 		&session.ID,
 		&session.UserID,
 		&session.Token,
-		&session.IP,
 		&session.ExpiresAt,
 		&session.CreatedAt,
 	)
@@ -73,9 +98,9 @@ func (r *Auth) DeleteExpired() error {
 	return nil
 }
 
-func (r *Auth) GetByUserID(userID string) (*models.RefreshSession, error) {
+func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error) {
 	row := sq.
-		Select("id", "userId", "refreshToken", "ip", "expiresAt", "createdAt").
+		Select("id", "userId", "refreshToken", "expiresAt", "createdAt").
 		From("refreshSessions").
 		Where(sq.Eq{"userId": userID}).
 		Where("expiresIn >= ?", time.Now().Unix()).
@@ -89,7 +114,6 @@ func (r *Auth) GetByUserID(userID string) (*models.RefreshSession, error) {
 		&session.ID,
 		&session.UserID,
 		&session.Token,
-		&session.IP,
 		&session.ExpiresAt,
 		&session.CreatedAt,
 	)
@@ -98,4 +122,45 @@ func (r *Auth) GetByUserID(userID string) (*models.RefreshSession, error) {
 	}
 
 	return &session, nil
+}
+
+func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
+	row := sq.
+		Select("id", "ip").
+		From("users").
+		Where(sq.Eq{"id": userID}).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(r.db).
+		QueryRow()
+
+	var user models.User
+
+	err := row.Scan(
+		&user.ID,
+		&user.IP,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *Auth) CreateUser(ctx context.Context, user *models.User) error {
+	_, err := sq.
+		Insert("users").
+		Columns("id", "ip").
+		Values(user.ID, user.IP).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(r.db).
+		Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
