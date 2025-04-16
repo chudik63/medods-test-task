@@ -41,8 +41,6 @@ paths:
       summary: Login
       tags:
       - auth
-schemes:
-- https
 securityDefinitions:
   BearerAuth:
     in: header

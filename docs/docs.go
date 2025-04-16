@@ -83,7 +83,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
 	BasePath:         "/v1",
-	Schemes:          []string{"https"},
+	Schemes:          []string{},
 	Title:            "Medods",
 	Description:      "This is the test service for providing JWT",
 	InfoInstanceName: "swagger",
