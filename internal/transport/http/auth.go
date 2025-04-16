@@ -13,10 +13,6 @@ import (
 
 const RequestTimeout = 10 * time.Second
 
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
 // Login godoc
 // @Summary      Login
 // @Description  Authenticates a user and generates access and refresh tokens
@@ -24,9 +20,9 @@ type RefreshTokenRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param user_id query string true "User GUID"
-// @Success      200 {object} map[string]string "access_token & refresh_token"
-// @Failure      400 {object} map[string]string "User id is empty"
-// @Failure      500 {object} map[string]string "Failed to create new session"
+// @Success      200 {object} TokenResponse "access_token & refresh_token"
+// @Failure      400 {object} ErrorResponse "User id is empty"
+// @Failure      500 {object} ErrorResponse "Failed to create new session"
 // @Router /auth/login [post]
 func (c *AppController) Login(ctx *gin.Context) {
 	userID := ctx.Query("user_id")
@@ -38,19 +34,16 @@ func (c *AppController) Login(ctx *gin.Context) {
 	accessToken, refreshToken, err := c.serv.NewSession(ctxWithTimeout, userID, IPAddress)
 	if err != nil {
 		if errors.Is(err, models.ErrEmptyUserID) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "User id is empty."})
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "User id is empty."})
 
 			return
 		}
 
 		c.logger.Error(ctx, "Failed to create new session", zap.Error(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new session."})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create new session."})
 
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	})
+	ctx.JSON(http.StatusOK, TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken})
 }

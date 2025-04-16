@@ -78,7 +78,7 @@ func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
 func (m *Manager) SignToken(claims Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 
-	return token.SignedString(m.secret)
+	return token.SignedString([]byte(m.secret))
 }
 
 func (m *Manager) ParseJWT(accessToken string) (*Claims, error) {
@@ -86,7 +86,7 @@ func (m *Manager) ParseJWT(accessToken string) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return m.secret, nil
+		return []byte(m.secret), nil
 	})
 
 	if err != nil {

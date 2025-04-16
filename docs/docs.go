@@ -41,30 +41,45 @@ const docTemplate = `{
                     "200": {
                         "description": "access_token \u0026 refresh_token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal_transport_http.TokenResponse"
                         }
                     },
                     "400": {
                         "description": "User id is empty",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal_transport_http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to create new session",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal_transport_http.ErrorResponse"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "internal_transport_http.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Error message",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_transport_http.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "description": "Access token",
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "description": "Refresh token",
+                    "type": "string"
                 }
             }
         }

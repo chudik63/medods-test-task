@@ -25,7 +25,7 @@ func (r *Auth) CreateSession(ctx context.Context, session *models.RefreshSession
 	_, err := sq.
 		Insert("refreshSessions").
 		Columns("userId", "ip", "refreshToken", "expiresAt", "createdAt").
-		Values(session.UserID, session.IP, session.Token, session.ExpiresAt.Unix(), session.CreatedAt).
+		Values(session.UserID, session.IP, session.Token, session.ExpiresAt, session.CreatedAt).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		Exec()
@@ -59,45 +59,45 @@ func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
 	return nil
 }
 
-func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
-	row := sq.
-		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
-		From("refreshSessions").
-		Where(sq.Eq{"refreshToken": token}).
-		PlaceholderFormat(sq.Dollar).
-		RunWith(r.db).
-		QueryRow()
+// func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
+// 	row := sq.
+// 		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
+// 		From("refreshSessions").
+// 		Where(sq.Eq{"refreshToken": token}).
+// 		PlaceholderFormat(sq.Dollar).
+// 		RunWith(r.db).
+// 		QueryRow()
 
-	var session models.RefreshSession
+// 	var session models.RefreshSession
 
-	err := row.Scan(
-		&session.ID,
-		&session.UserID,
-		&session.IP,
-		&session.Token,
-		&session.ExpiresAt,
-		&session.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
+// 	err := row.Scan(
+// 		&session.ID,
+// 		&session.UserID,
+// 		&session.IP,
+// 		&session.Token,
+// 		&session.ExpiresAt,
+// 		&session.CreatedAt,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &session, nil
-}
+// 	return &session, nil
+// }
 
-func (r *Auth) DeleteExpired() error {
-	_, err := sq.
-		Delete("refreshSessions").
-		Where("expiresAt < ?", time.Now().Unix()).
-		PlaceholderFormat(sq.Dollar).
-		RunWith(r.db).
-		Exec()
-	if err != nil {
-		return err
-	}
+// func (r *Auth) DeleteExpired() error {
+// 	_, err := sq.
+// 		Delete("refreshSessions").
+// 		Where("expiresAt < ?", time.Now().Unix()).
+// 		PlaceholderFormat(sq.Dollar).
+// 		RunWith(r.db).
+// 		Exec()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error) {
 	row := sq.
