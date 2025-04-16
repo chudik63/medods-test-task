@@ -6,7 +6,7 @@ git clone https://github.com/chudik63/medods-test-task.git
 cd medods-test-task
 ```
 
-## Running
+## Build & Run (Locally)
 ```
 docker-compose up
 ```
