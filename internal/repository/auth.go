@@ -24,8 +24,8 @@ func NewAuthRepo(db postgres.DB) *Auth {
 func (r *Auth) CreateSession(ctx context.Context, session *models.RefreshSession) error {
 	_, err := sq.
 		Insert("refreshSessions").
-		Columns("userId", "refreshToken", "expiresAt", "createdAt").
-		Values(session.UserID, session.Token, session.ExpiresAt.Unix(), session.CreatedAt).
+		Columns("userId", "ip", "refreshToken", "expiresAt", "createdAt").
+		Values(session.UserID, session.IP, session.Token, session.ExpiresAt.Unix(), session.CreatedAt).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		Exec()
@@ -61,7 +61,7 @@ func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
 
 func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
 	row := sq.
-		Select("id", "userId", "refreshToken", "expiresAt", "createdAt").
+		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
 		From("refreshSessions").
 		Where(sq.Eq{"refreshToken": token}).
 		PlaceholderFormat(sq.Dollar).
@@ -73,6 +73,7 @@ func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
 	err := row.Scan(
 		&session.ID,
 		&session.UserID,
+		&session.IP,
 		&session.Token,
 		&session.ExpiresAt,
 		&session.CreatedAt,
@@ -100,7 +101,7 @@ func (r *Auth) DeleteExpired() error {
 
 func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error) {
 	row := sq.
-		Select("id", "userId", "refreshToken", "expiresAt", "createdAt").
+		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
 		From("refreshSessions").
 		Where(sq.Eq{"userId": userID}).
 		Where("expiresIn >= ?", time.Now().Unix()).
@@ -113,6 +114,7 @@ func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error)
 	err := row.Scan(
 		&session.ID,
 		&session.UserID,
+		&session.IP,
 		&session.Token,
 		&session.ExpiresAt,
 		&session.CreatedAt,
@@ -126,7 +128,7 @@ func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error)
 
 func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
 	row := sq.
-		Select("id", "ip").
+		Select("id").
 		From("users").
 		Where(sq.Eq{"id": userID}).
 		PlaceholderFormat(sq.Dollar).
@@ -137,7 +139,6 @@ func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, er
 
 	err := row.Scan(
 		&user.ID,
-		&user.IP,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -153,8 +154,8 @@ func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, er
 func (r *Auth) CreateUser(ctx context.Context, user *models.User) error {
 	_, err := sq.
 		Insert("users").
-		Columns("id", "ip").
-		Values(user.ID, user.IP).
+		Columns("id").
+		Values(user.ID).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		Exec()

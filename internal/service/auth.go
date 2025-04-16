@@ -45,7 +45,6 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 
 		err := s.authRepo.CreateUser(ctx, &models.User{
 			ID: userID,
-			IP: IPAddress,
 		})
 		if err != nil {
 			return "", "", err
@@ -60,6 +59,7 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 	err = s.authRepo.CreateSession(ctx, &models.RefreshSession{
 		UserID:    userID,
 		Token:     refresh,
+		IP:        IPAddress,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(s.tokenManager.GetRefreshTTL()),
 	})
