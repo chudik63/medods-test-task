@@ -61,8 +61,9 @@ func (c *AppController) Login(ctx *gin.Context) {
 // @Param token body RefreshTokenRequest true "Refresh Token"
 // @Success      200 {object} TokenResponse "access_token & refresh_token"
 // @Failure      400 {object} ErrorResponse "Invalid or missing refresh token"
-// @Failure      400 {object} ErrorResponse "Invalid token type"
+// @Failure      400 {object} ErrorResponse "Token is invalid"
 // @Failure      401 {object} ErrorResponse ""
+// @Failure      403 {object} ErrorResponse "Session is invalid"
 // @Failure      500 {object} ErrorResponse "An unexpected error occurred"
 // @Router /auth/refresh [post]
 func (c *AppController) RefreshToken(ctx *gin.Context) {
@@ -81,6 +82,25 @@ func (c *AppController) RefreshToken(ctx *gin.Context) {
 
 	accessToken, refreshToken, err := c.serv.RefreshToken(ctxWithTimeout, refreshTokenRequest.RefreshToken, IPAddress)
 	if err != nil {
+		if errors.Is(err, models.ErrTokenExpired) ||
+			errors.Is(err, models.ErrMismatchedHashAndToken) || errors.Is(err, models.ErrSessionNotFound) {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+
+			return
+		}
+
+		if errors.Is(err, models.ErrInvalidToken) {
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "Token is invalid."})
+
+			return
+		}
+
+		if errors.Is(err, models.ErrInvalidSession) {
+			ctx.JSON(http.StatusForbidden, ErrorResponse{Error: "Session is invalid."})
+
+			return
+		}
+
 		c.logger.Error(ctx, "Failed to refresh token", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "An unexpected error occurred."})
 

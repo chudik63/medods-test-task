@@ -76,11 +76,15 @@ paths:
           schema:
             $ref: '#/definitions/internal_transport_http.TokenResponse'
         "400":
-          description: Invalid token type
+          description: Token is invalid
           schema:
             $ref: '#/definitions/internal_transport_http.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "403":
+          description: Session is invalid
           schema:
             $ref: '#/definitions/internal_transport_http.ErrorResponse'
         "500":

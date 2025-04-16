@@ -114,7 +114,7 @@ func (m *Manager) ParseRefreshToken(refreshToken string) (uuid.UUID, error) {
 		return uuid.UUID{}, err
 	}
 
-	if len(decoded) <= refreshTokenLength {
+	if len(decoded) != refreshTokenLength+len(uuid.UUID{}) {
 		return uuid.UUID{}, models.ErrInvalidToken
 	}
 

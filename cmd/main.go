@@ -1,6 +1,8 @@
 package main
 
-import "medods-test-task/internal/app"
+import (
+	"medods-test-task/internal/app"
+)
 
 // @title Medods
 // @version 1.0
