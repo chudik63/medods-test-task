@@ -22,6 +22,10 @@ type PostgresConfig struct {
 	SSLMode  string
 }
 
+type ServerConfig struct {
+	MigrationsPath string
+}
+
 type HttpConfig struct {
 	Host               string
 	Port               string
@@ -34,6 +38,7 @@ type Config struct {
 	AuthJWT  AuthJWT
 	Postgres PostgresConfig
 	HTTP     HttpConfig
+	Server   ServerConfig
 }
 
 func NewSettings() *Config {
@@ -60,6 +65,9 @@ func NewSettings() *Config {
 			ReadTimeout:        viper.GetDuration("READ_TIMEOUT"),
 			WriteTimeout:       viper.GetDuration("WRITE_TIMEOUT"),
 			MaxHeaderMegabytes: viper.GetInt("MAX_HEADER_MBYTES"),
+		},
+		Server: ServerConfig{
+			MigrationsPath: viper.GetString("MIGRATIONS_PATH"),
 		},
 	}
 }
