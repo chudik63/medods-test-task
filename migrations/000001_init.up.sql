@@ -8,3 +8,4 @@ CREATE TABLE IF NOT EXISTS refreshSessions (
 );
 
 CREATE INDEX idx_refresh_tokens_userId ON refresh_tokens(userId);
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(refreshToken);
