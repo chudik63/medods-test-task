@@ -1,0 +1,50 @@
+basePath: /v1
+host: localhost
+info:
+  contact: {}
+  description: This is the test service for providing JWT
+  title: Medods
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and generates access and refresh tokens
+      parameters:
+      - description: User GUID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token & refresh_token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: User id is empty
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create new session
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - auth
+schemes:
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
