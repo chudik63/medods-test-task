@@ -4,16 +4,26 @@ import (
 	"context"
 	"errors"
 	"medods-test-task/internal/models"
-	"medods-test-task/pkg/utils"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@latest --name EmailService
 type EmailService interface {
 	SendIPWarningEmail(ctx context.Context, email string)
 }
 
+//go:generate go run github.com/vektra/mockery/v2@latest --name TokenManager
+type TokenManager interface {
+	NewTokenPair(userID uuid.UUID, IPAddress string) (string, string, error)
+	ParseRefreshToken(refreshToken string) (uuid.UUID, error)
+	HashToken(password string) (string, error)
+	ValidateToken(token, hashedToken string) error
+	GetRefreshTTL() time.Duration
+}
+
+//go:generate go run github.com/vektra/mockery/v2@latest --name AuthRepo
 type AuthRepo interface {
 	CreateSession(ctx context.Context, session *models.RefreshSession) error
 	DeleteSessionByUserID(ctx context.Context, userID uuid.UUID) error
@@ -24,11 +34,11 @@ type AuthRepo interface {
 
 type AuthService struct {
 	authRepo     AuthRepo
-	tokenManager utils.TokenManager
+	tokenManager TokenManager
 	emailService EmailService
 }
 
-func NewAuthService(auth AuthRepo, token utils.TokenManager, email EmailService) *AuthService {
+func NewAuthService(auth AuthRepo, token TokenManager, email EmailService) *AuthService {
 	return &AuthService{
 		authRepo:     auth,
 		tokenManager: token,
