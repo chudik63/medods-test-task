@@ -9,7 +9,7 @@ import (
 )
 
 type EmailService interface {
-	SendWarningEmail(email string)
+	SendIPWarningEmail(ctx context.Context, email string)
 }
 
 type AuthRepo interface {
@@ -98,7 +98,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken, IPAddress 
 			return "", "", err
 		}
 
-		go s.emailService.SendWarningEmail(user.Email)
+		go s.emailService.SendIPWarningEmail(ctx, user.Email)
 	}
 
 	accessToken, newRefreshToken, err := s.tokenManager.NewJWT(claims.UserID, IPAddress)

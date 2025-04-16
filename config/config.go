@@ -25,6 +25,18 @@ type ServerConfig struct {
 	MigrationsPath string
 }
 
+type EmailConfig struct {
+	IPWarningSubject  string
+	IPWarningTemplate string
+}
+
+type SMTPConfig struct {
+	Mail     string
+	Host     string
+	Port     int
+	Password string
+	Domain   string
+}
 type HttpConfig struct {
 	Host               string
 	Port               string
@@ -38,6 +50,8 @@ type Config struct {
 	Postgres PostgresConfig
 	HTTP     HttpConfig
 	Server   ServerConfig
+	SMTP     SMTPConfig
+	Email    EmailConfig
 }
 
 func NewSettings() *Config {
@@ -66,6 +80,17 @@ func NewSettings() *Config {
 		},
 		Server: ServerConfig{
 			MigrationsPath: viper.GetString("MIGRATIONS_PATH"),
+		},
+		SMTP: SMTPConfig{
+			Mail:     viper.GetString("SMTP_MAIL"),
+			Host:     viper.GetString("SMTP_HOST"),
+			Port:     viper.GetInt("SMTP_PORT"),
+			Password: viper.GetString("SMTP_PASSWORD"),
+			Domain:   viper.GetString("DOMAIN"),
+		},
+		Email: EmailConfig{
+			IPWarningSubject:  viper.GetString("IP_WARNING_SUBJECT"),
+			IPWarningTemplate: viper.GetString("IP_WARNING_TEMPLATE"),
 		},
 	}
 }

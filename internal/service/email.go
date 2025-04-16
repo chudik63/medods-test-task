@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"medods-test-task/config"
 	"medods-test-task/pkg/email/smtp"
 	"medods-test-task/pkg/logger"
 
@@ -13,27 +14,23 @@ type SMTPSender interface {
 }
 
 type emailService struct {
-	sender          SMTPSender
-	warningSubject  string
-	warningTemplate string
-
-	domain string
-	logger logger.Logger
+	sender      SMTPSender
+	emailConfig *config.EmailConfig
+	logger      logger.Logger
 }
 
-func NewEmailService(s SMTPSender, wsub, wtempl, dom string) *emailService {
+func NewEmailService(s SMTPSender, logger logger.Logger, emailConf *config.EmailConfig) *emailService {
 	return &emailService{
-		sender:          s,
-		warningSubject:  wsub,
-		warningTemplate: wtempl,
-		domain:          dom,
+		sender:      s,
+		emailConfig: emailConf,
+		logger:      logger,
 	}
 }
 
-func (s *emailService) SendWarningEmail(ctx context.Context, email string) {
-	sendInput := smtp.SendEmailInput{Subject: s.warningSubject, To: email}
+func (s *emailService) SendIPWarningEmail(ctx context.Context, email string) {
+	sendInput := smtp.SendEmailInput{Subject: s.emailConfig.IPWarningSubject, To: email}
 
-	if err := sendInput.GenerateBodyFromHTML(s.warningTemplate, nil); err != nil {
+	if err := sendInput.GenerateBodyFromHTML(s.emailConfig.IPWarningTemplate, nil); err != nil {
 		s.logger.Error(ctx, "failed generate body from html template", zap.Error(err))
 
 		return

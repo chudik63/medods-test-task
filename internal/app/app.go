@@ -8,6 +8,7 @@ import (
 	"medods-test-task/internal/service"
 	"medods-test-task/internal/transport/http"
 	"medods-test-task/internal/transport/http/routes"
+	"medods-test-task/pkg/email/smtp"
 	"medods-test-task/pkg/logger"
 	"medods-test-task/pkg/migrator"
 	"medods-test-task/pkg/utils"
@@ -53,10 +54,15 @@ func Run() {
 		logs.Fatal(ctx, "failed to migrate", zap.Error(err))
 	}
 
+	sender, err := smtp.NewSMTPSender(cfg.SMTP.Mail, cfg.SMTP.Password, cfg.SMTP.Host, cfg.SMTP.Domain, cfg.SMTP.Port)
+	if err != nil {
+		logs.Fatal(ctx, "failed to create smtp sender", zap.Error(err))
+	}
+
 	tokenMananger := utils.NewManager(cfg)
 	authRepo := repository.NewAuthRepo(db)
-
-	service := service.NewAuthService(authRepo, tokenMananger)
+	emailService := service.NewEmailService(sender, logs, &cfg.Email)
+	service := service.NewAuthService(authRepo, tokenMananger, emailService)
 
 	handler := http.NewAppController(service, logs)
 
