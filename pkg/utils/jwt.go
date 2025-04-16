@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"medods-test-task/internal/models"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -17,7 +18,7 @@ type Config interface {
 type TokenManager interface {
 	NewJWT(userID, IPAddress string) (string, string, error)
 	SignToken(claims Claims) (string, error)
-	ParseJWT(accessToken string) (*Claims, error)
+	ParseJWT(token string) (*Claims, error)
 	HashToken(password string) (string, error)
 	ValidateToken(password, hashedPassword string) error
 	GetAccessTTL() time.Duration
@@ -25,8 +26,9 @@ type TokenManager interface {
 }
 
 type Claims struct {
-	userID    string
-	ipAddress string
+	UserID    string
+	IPAddress string
+	Subject   string
 	jwt.StandardClaims
 }
 
@@ -46,10 +48,12 @@ func NewManager(cfg Config) *Manager {
 
 func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
 	accessClaims := Claims{
-		userID:    userID,
-		ipAddress: IPAddress,
+		UserID:    userID,
+		IPAddress: IPAddress,
+		Subject:   "access",
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(m.accessTTL).Unix(),
+			IssuedAt:  time.Now().Unix(),
 		},
 	}
 
@@ -59,10 +63,12 @@ func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
 	}
 
 	refreshClaims := Claims{
-		userID:    userID,
-		ipAddress: IPAddress,
+		UserID:    userID,
+		IPAddress: IPAddress,
+		Subject:   "refresh",
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(m.refreshTTL).Unix(),
+			IssuedAt:  time.Now().Unix(),
 		},
 	}
 
@@ -90,12 +96,12 @@ func (m *Manager) ParseJWT(accessToken string) (*Claims, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse jwt token: %w", err)
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return nil, models.ErrInvalidToken
 	}
 
 	return claims, nil

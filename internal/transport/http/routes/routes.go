@@ -13,7 +13,7 @@ import (
 
 type Controller interface {
 	Login(ctx *gin.Context)
-	//RefreshToken(ctx *gin.Context)
+	RefreshToken(ctx *gin.Context)
 }
 
 func RegistrationRoutes(app *gin.Engine, tokenManager utils.TokenManager, c Controller) {
@@ -27,7 +27,7 @@ func RegistrationRoutes(app *gin.Engine, tokenManager utils.TokenManager, c Cont
 	auth := v1.Group("/auth")
 	{
 		auth.POST("/login", c.Login)
-		//auth.POST("/refresh", c.RefreshToken)
+		auth.POST("/refresh", c.RefreshToken)
 	}
 
 	app.GET("/docs/*any", func(c *gin.Context) {

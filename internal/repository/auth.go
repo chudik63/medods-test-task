@@ -59,45 +59,22 @@ func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
 	return nil
 }
 
-// func (r *Auth) GetByToken(token string) (*models.RefreshSession, error) {
-// 	row := sq.
-// 		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
-// 		From("refreshSessions").
-// 		Where(sq.Eq{"refreshToken": token}).
-// 		PlaceholderFormat(sq.Dollar).
-// 		RunWith(r.db).
-// 		QueryRow()
+func (r *Auth) UpdateSession(ctx context.Context, session *models.RefreshSession) error {
+	_, err := sq.Update("refreshSessions").
+		Where(sq.Eq{"userID": session.UserID}).
+		Set("ip", session.IP).
+		Set("refreshToken", session.Token).
+		Set("expiresAt", session.ExpiresAt).
+		Set("createdAt", session.CreatedAt).
+		PlaceholderFormat(sq.Dollar).
+		RunWith(r.db).
+		Exec()
+	if err != nil {
+		return err
+	}
 
-// 	var session models.RefreshSession
-
-// 	err := row.Scan(
-// 		&session.ID,
-// 		&session.UserID,
-// 		&session.IP,
-// 		&session.Token,
-// 		&session.ExpiresAt,
-// 		&session.CreatedAt,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &session, nil
-// }
-
-// func (r *Auth) DeleteExpired() error {
-// 	_, err := sq.
-// 		Delete("refreshSessions").
-// 		Where("expiresAt < ?", time.Now().Unix()).
-// 		PlaceholderFormat(sq.Dollar).
-// 		RunWith(r.db).
-// 		Exec()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
+	return nil
+}
 
 func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error) {
 	row := sq.
@@ -152,7 +129,7 @@ func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, er
 }
 
 func (r *Auth) CreateUser(ctx context.Context, user *models.User) error {
-	_, err := sq.
+	res, err := sq.
 		Insert("users").
 		Columns("id").
 		Values(user.ID).
@@ -161,6 +138,15 @@ func (r *Auth) CreateUser(ctx context.Context, user *models.User) error {
 		Exec()
 	if err != nil {
 		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return models.ErrSessionNotFound
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 
 type AuthService interface {
 	NewSession(ctx context.Context, userID, IPAddress string) (string, string, error)
+	RefreshToken(ctx context.Context, refreshToken, IPAdress string) (string, string, error)
 }
 
 type AppController struct {

@@ -13,6 +13,10 @@ import (
 
 const RequestTimeout = 10 * time.Second
 
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 // Login godoc
 // @Summary      Login
 // @Description  Authenticates a user and generates access and refresh tokens
@@ -22,7 +26,7 @@ const RequestTimeout = 10 * time.Second
 // @Param user_id query string true "User GUID"
 // @Success      200 {object} TokenResponse "access_token & refresh_token"
 // @Failure      400 {object} ErrorResponse "User id is empty"
-// @Failure      500 {object} ErrorResponse "Failed to create new session"
+// @Failure      500 {object} ErrorResponse "An unexpected error occurred"
 // @Router /auth/login [post]
 func (c *AppController) Login(ctx *gin.Context) {
 	userID := ctx.Query("user_id")
@@ -40,7 +44,55 @@ func (c *AppController) Login(ctx *gin.Context) {
 		}
 
 		c.logger.Error(ctx, "Failed to create new session", zap.Error(err))
-		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create new session."})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "An unexpected error occurred."})
+
+		return
+	}
+
+	ctx.JSON(http.StatusOK, TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken})
+}
+
+// RefreshToken godoc
+// @Summary      RefreshToken
+// @Description  Refreshes token pair
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param token body RefreshTokenRequest true "Refresh Token"
+// @Success      200 {object} TokenResponse "access_token & refresh_token"
+// @Failure      400 {object} ErrorResponse "Invalid or missing refresh token"
+// @Failure      400 {object} ErrorResponse "Invalid token type"
+// @Failure      401 {object} ErrorResponse ""
+// @Failure      500 {object} ErrorResponse "An unexpected error occurred"
+// @Router /auth/refresh [post]
+func (c *AppController) RefreshToken(ctx *gin.Context) {
+	var refreshTokenRequest RefreshTokenRequest
+
+	if err := ctx.ShouldBindJSON(&refreshTokenRequest); err != nil || refreshTokenRequest.RefreshToken == "" {
+		c.logger.Error(ctx, "Refresh token is missing or invalid in the request body.", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid or missing refresh token."})
+
+		return
+	}
+	IPAddress := ctx.ClientIP()
+
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), RequestTimeout)
+	defer cancel()
+
+	accessToken, refreshToken, err := c.serv.RefreshToken(ctxWithTimeout, refreshTokenRequest.RefreshToken, IPAddress)
+	if err != nil {
+		if errors.Is(err, models.ErrParseToken) {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+
+			return
+		}
+		if errors.Is(err, models.ErrInvalidTokenType) {
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token type."})
+
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "An unexpected error occurred."})
 
 		return
 	}
