@@ -18,7 +18,7 @@ type Controller interface {
 
 func RegistrationRoutes(app *gin.Engine, tokenManager utils.TokenManager, c Controller) {
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"}, // Разрешить все источники
+		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 	}))
