@@ -6,9 +6,9 @@ import (
 	"errors"
 	"medods-test-task/internal/db/postgres"
 	"medods-test-task/internal/models"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 )
 
 type Auth struct {
@@ -36,7 +36,7 @@ func (r *Auth) CreateSession(ctx context.Context, session *models.RefreshSession
 	return nil
 }
 
-func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
+func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID uuid.UUID) error {
 	res, err := sq.
 		Delete("refreshSessions").
 		Where(sq.Eq{"userId": userID}).
@@ -59,29 +59,11 @@ func (r *Auth) DeleteSessionByUserID(ctx context.Context, userID string) error {
 	return nil
 }
 
-func (r *Auth) UpdateSession(ctx context.Context, session *models.RefreshSession) error {
-	_, err := sq.Update("refreshSessions").
-		Where(sq.Eq{"userID": session.UserID}).
-		Set("ip", session.IP).
-		Set("refreshToken", session.Token).
-		Set("expiresAt", session.ExpiresAt).
-		Set("createdAt", session.CreatedAt).
-		PlaceholderFormat(sq.Dollar).
-		RunWith(r.db).
-		Exec()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error) {
+func (r *Auth) GetSessionByUserID(ctx context.Context, userID uuid.UUID) (*models.RefreshSession, error) {
 	row := sq.
 		Select("id", "userId", "ip", "refreshToken", "expiresAt", "createdAt").
 		From("refreshSessions").
 		Where(sq.Eq{"userId": userID}).
-		Where("expiresIn >= ?", time.Now().Unix()).
 		PlaceholderFormat(sq.Dollar).
 		RunWith(r.db).
 		QueryRow()
@@ -97,13 +79,17 @@ func (r *Auth) GetSessionByUserID(userID string) (*models.RefreshSession, error)
 		&session.CreatedAt,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, models.ErrSessionNotFound
+		}
+
 		return nil, err
 	}
 
 	return &session, nil
 }
 
-func (r *Auth) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
+func (r *Auth) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
 	row := sq.
 		Select("id").
 		From("users").

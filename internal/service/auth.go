@@ -6,6 +6,8 @@ import (
 	"medods-test-task/internal/models"
 	"medods-test-task/pkg/utils"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type EmailService interface {
@@ -14,10 +16,10 @@ type EmailService interface {
 
 type AuthRepo interface {
 	CreateSession(ctx context.Context, session *models.RefreshSession) error
-	UpdateSession(ctx context.Context, session *models.RefreshSession) error
-	DeleteSessionByUserID(ctx context.Context, userID string) error
-	GetUserByID(ctx context.Context, userID string) (*models.User, error)
+	DeleteSessionByUserID(ctx context.Context, userID uuid.UUID) error
+	GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error)
 	CreateUser(ctx context.Context, user *models.User) error
+	GetSessionByUserID(ctx context.Context, userID uuid.UUID) (*models.RefreshSession, error)
 }
 
 type AuthService struct {
@@ -39,26 +41,31 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 		return "", "", models.ErrEmptyUserID
 	}
 
-	access, refresh, err := s.tokenManager.NewJWT(userID, IPAddress)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return "", "", models.ErrInvalidUserID
+	}
+
+	access, refresh, err := s.tokenManager.NewTokenPair(userUUID, IPAddress)
 	if err != nil {
 		return "", "", err
 	}
 
-	_, err = s.authRepo.GetUserByID(ctx, userID)
+	_, err = s.authRepo.GetUserByID(ctx, userUUID)
 	if err != nil {
 		if !errors.Is(err, models.ErrUserNotFound) {
 			return "", "", err
 		}
 
 		err := s.authRepo.CreateUser(ctx, &models.User{
-			ID: userID,
+			ID: userUUID,
 		})
 		if err != nil {
 			return "", "", err
 		}
 	}
 
-	err = s.authRepo.DeleteSessionByUserID(ctx, userID)
+	err = s.authRepo.DeleteSessionByUserID(ctx, userUUID)
 	if err != nil && !errors.Is(err, models.ErrSessionNotFound) {
 		return "", "", err
 	}
@@ -69,7 +76,7 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 	}
 
 	err = s.authRepo.CreateSession(ctx, &models.RefreshSession{
-		UserID:    userID,
+		UserID:    userUUID,
 		Token:     hashedRefresh,
 		IP:        IPAddress,
 		CreatedAt: time.Now(),
@@ -83,32 +90,54 @@ func (s *AuthService) NewSession(ctx context.Context, userID, IPAddress string) 
 }
 
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken, IPAddress string) (string, string, error) {
-	claims, err := s.tokenManager.ParseJWT(refreshToken)
+	userID, err := s.tokenManager.ParseRefreshToken(refreshToken)
 	if err != nil {
-		return "", "", errors.Join(models.ErrParseToken, err)
+		return "", "", err
 	}
 
-	if claims.Subject == "access" {
-		return "", "", models.ErrInvalidTokenType
+	session, err := s.authRepo.GetSessionByUserID(ctx, userID)
+	if err != nil {
+		return "", "", err
 	}
 
-	if claims.IPAddress != IPAddress {
-		user, err := s.authRepo.GetUserByID(ctx, claims.UserID)
+	err = s.tokenManager.ValidateToken(refreshToken, session.Token)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = s.authRepo.DeleteSessionByUserID(ctx, session.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if session.ExpiresAt.Before(time.Now()) {
+		return "", "", models.ErrTokenExpired
+	}
+
+	if session.IP != IPAddress {
+		user, err := s.authRepo.GetUserByID(ctx, session.UserID)
 		if err != nil {
 			return "", "", err
 		}
 
 		go s.emailService.SendIPWarningEmail(ctx, user.Email)
+
+		return "", "", models.ErrInvalidSession
 	}
 
-	accessToken, newRefreshToken, err := s.tokenManager.NewJWT(claims.UserID, IPAddress)
+	accessToken, newRefreshToken, err := s.tokenManager.NewTokenPair(session.UserID, IPAddress)
 	if err != nil {
 		return "", "", err
 	}
 
-	err = s.authRepo.UpdateSession(ctx, &models.RefreshSession{
-		UserID:    claims.UserID,
-		Token:     newRefreshToken,
+	hashedRefresh, err := s.tokenManager.HashToken(newRefreshToken)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = s.authRepo.CreateSession(ctx, &models.RefreshSession{
+		UserID:    session.UserID,
+		Token:     hashedRefresh,
 		IP:        IPAddress,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(s.tokenManager.GetRefreshTTL()),

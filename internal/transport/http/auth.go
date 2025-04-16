@@ -81,17 +81,7 @@ func (c *AppController) RefreshToken(ctx *gin.Context) {
 
 	accessToken, refreshToken, err := c.serv.RefreshToken(ctxWithTimeout, refreshTokenRequest.RefreshToken, IPAddress)
 	if err != nil {
-		if errors.Is(err, models.ErrParseToken) {
-			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-
-			return
-		}
-		if errors.Is(err, models.ErrInvalidTokenType) {
-			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token type."})
-
-			return
-		}
-
+		c.logger.Error(ctx, "Failed to refresh token", zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: "An unexpected error occurred."})
 
 		return

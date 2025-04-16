@@ -1,12 +1,20 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"medods-test-task/internal/models"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	refreshTokenLength = 16
 )
 
 type Config interface {
@@ -16,17 +24,18 @@ type Config interface {
 }
 
 type TokenManager interface {
-	NewJWT(userID, IPAddress string) (string, string, error)
+	NewTokenPair(userID uuid.UUID, IPAddress string) (string, string, error)
 	SignToken(claims Claims) (string, error)
 	ParseJWT(token string) (*Claims, error)
+	ParseRefreshToken(refreshToken string) (uuid.UUID, error)
 	HashToken(password string) (string, error)
-	ValidateToken(password, hashedPassword string) error
+	ValidateToken(token, hashedToken string) error
 	GetAccessTTL() time.Duration
 	GetRefreshTTL() time.Duration
 }
 
 type Claims struct {
-	UserID    string
+	UserID    uuid.UUID
 	IPAddress string
 	Subject   string
 	jwt.StandardClaims
@@ -46,7 +55,7 @@ func NewManager(cfg Config) *Manager {
 	}
 }
 
-func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
+func (m *Manager) NewTokenPair(userID uuid.UUID, IPAddress string) (string, string, error) {
 	accessClaims := Claims{
 		UserID:    userID,
 		IPAddress: IPAddress,
@@ -62,23 +71,15 @@ func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
 		return "", "", fmt.Errorf("could not sign token: %w", err)
 	}
 
-	refreshClaims := Claims{
-		UserID:    userID,
-		IPAddress: IPAddress,
-		Subject:   "refresh",
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(m.refreshTTL).Unix(),
-			IssuedAt:  time.Now().Unix(),
-		},
-	}
-
-	refreshToken, err := m.SignToken(refreshClaims)
+	refreshToken := make([]byte, refreshTokenLength)
+	_, err = rand.Read(refreshToken)
 	if err != nil {
-		return "", "", fmt.Errorf("could not sign token: %w", err)
+		return "", "", fmt.Errorf("failed to create refresh token: %w", err)
 	}
 
-	return accessToken, refreshToken, nil
+	refreshToken = append(refreshToken, userID[:]...)
 
+	return accessToken, base64.URLEncoding.EncodeToString(refreshToken), nil
 }
 
 func (m *Manager) SignToken(claims Claims) (string, error) {
@@ -107,6 +108,24 @@ func (m *Manager) ParseJWT(accessToken string) (*Claims, error) {
 	return claims, nil
 }
 
+func (m *Manager) ParseRefreshToken(refreshToken string) (uuid.UUID, error) {
+	decoded, err := base64.URLEncoding.DecodeString(refreshToken)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+
+	if len(decoded) <= refreshTokenLength {
+		return uuid.UUID{}, models.ErrInvalidToken
+	}
+
+	userID, err := uuid.FromBytes(decoded[:refreshTokenLength])
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("failed to retrieve user uuid from refresh token: %w", err)
+	}
+
+	return userID, nil
+}
+
 func (m *Manager) HashToken(token string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
 	if err != nil {
@@ -116,7 +135,12 @@ func (m *Manager) HashToken(token string) (string, error) {
 }
 
 func (m *Manager) ValidateToken(token, hashedToken string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(token))
+	err := bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(token))
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return models.ErrMismatchedHashAndToken
+	}
+
+	return nil
 }
 
 func (m *Manager) GetAccessTTL() time.Duration {

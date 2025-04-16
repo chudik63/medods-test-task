@@ -2,11 +2,13 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RefreshSession struct {
 	ID        uint
-	UserID    string
+	UserID    uuid.UUID
 	IP        string
 	Token     string
 	CreatedAt time.Time
@@ -14,6 +16,6 @@ type RefreshSession struct {
 }
 
 type User struct {
-	ID    string
+	ID    uuid.UUID
 	Email string
 }
