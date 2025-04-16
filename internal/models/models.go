@@ -6,9 +6,13 @@ import (
 
 type RefreshSession struct {
 	ID        uint
-	UserID    uint64
-	IP        string
+	UserID    string
 	Token     string
 	CreatedAt time.Time
 	ExpiresAt time.Time
+}
+
+type User struct {
+	ID string
+	IP string
 }
