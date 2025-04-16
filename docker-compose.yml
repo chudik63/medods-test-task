@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
-  db:
-    container_name: db_tokens
+  postgres:
+    container_name: medods_auth_db
     image: postgres:15-alpine
     restart: always
     environment:
@@ -23,13 +21,13 @@ services:
   backend:
     container_name: medods_auth_service
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
     build: 
-      content: .
+      context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT}:${PORT}"
+      - "${HTTP_PORT}:${HTTP_PORT}"
     env_file:
       - .env
     networks:
