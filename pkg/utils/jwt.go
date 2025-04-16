@@ -14,14 +14,8 @@ type Config interface {
 	GetRefreshTokenExpiration() time.Duration
 }
 
-type Claims struct {
-	UserID    uint64
-	IPAddress string
-	jwt.StandardClaims
-}
-
 type TokenManager interface {
-	NewJWT(userId uint64, email, ipAddress, tokenID, role string) (string, string, error)
+	NewJWT(userID, IPAddress string) (string, string, error)
 	SignToken(claims Claims) (string, error)
 	ParseJWT(accessToken string) (*Claims, error)
 	HashToken(password string) (string, error)
@@ -30,26 +24,32 @@ type TokenManager interface {
 	GetRefreshTTL() time.Duration
 }
 
+type Claims struct {
+	userID    string
+	ipAddress string
+	jwt.StandardClaims
+}
+
 type Manager struct {
 	secret     string
-	AccessTTL  time.Duration
-	RefreshTTL time.Duration
+	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
 func NewManager(cfg Config) *Manager {
 	return &Manager{
 		secret:     cfg.GetAuthJWTSecret(),
-		AccessTTL:  cfg.GetAccessTokenExpiration(),
-		RefreshTTL: cfg.GetRefreshTokenExpiration(),
+		accessTTL:  cfg.GetAccessTokenExpiration(),
+		refreshTTL: cfg.GetRefreshTokenExpiration(),
 	}
 }
 
-func (m *Manager) NewJWT(userId uint64, email, ipAddress, tokenID, role string) (string, string, error) {
+func (m *Manager) NewJWT(userID, IPAddress string) (string, string, error) {
 	accessClaims := Claims{
-		UserID:    userId,
-		IPAddress: ipAddress,
+		userID:    userID,
+		ipAddress: IPAddress,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(m.AccessTTL).Unix(),
+			ExpiresAt: time.Now().Add(m.accessTTL).Unix(),
 		},
 	}
 
@@ -59,10 +59,10 @@ func (m *Manager) NewJWT(userId uint64, email, ipAddress, tokenID, role string) 
 	}
 
 	refreshClaims := Claims{
-		UserID:    userId,
-		IPAddress: ipAddress,
+		userID:    userID,
+		ipAddress: IPAddress,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(m.RefreshTTL).Unix(),
+			ExpiresAt: time.Now().Add(m.refreshTTL).Unix(),
 		},
 	}
 
@@ -114,9 +114,9 @@ func (m *Manager) ValidateToken(token, hashedToken string) error {
 }
 
 func (m *Manager) GetAccessTTL() time.Duration {
-	return m.AccessTTL
+	return m.accessTTL
 }
 
 func (m *Manager) GetRefreshTTL() time.Duration {
-	return m.RefreshTTL
+	return m.refreshTTL
 }
