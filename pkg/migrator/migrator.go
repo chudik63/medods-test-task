@@ -1,7 +1,6 @@
 package migrator
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"medods-test-task/config"
@@ -11,7 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func Start(ctx context.Context, cfg *config.Config) error {
+func Start(cfg *config.Config) error {
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Name, cfg.Postgres.SSLMode)
 
 	m, err := migrate.New("file://"+cfg.Server.MigrationsPath, dbURL)
