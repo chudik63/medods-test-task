@@ -118,7 +118,7 @@ func (m *Manager) ParseRefreshToken(refreshToken string) (uuid.UUID, error) {
 		return uuid.UUID{}, models.ErrInvalidToken
 	}
 
-	userID, err := uuid.FromBytes(decoded[:refreshTokenLength])
+	userID, err := uuid.FromBytes(decoded[refreshTokenLength:])
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("failed to retrieve user uuid from refresh token: %w", err)
 	}
