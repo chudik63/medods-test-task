@@ -1,0 +1,40 @@
+services:
+  postgres:
+    container_name: medods_auth_db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - '${DB_PORT}:5432'
+    networks:
+      - medods
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      interval: 10s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: medods_auth_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    env_file:
+      - .env
+    networks:
+      - medods
+
+networks:
+  medods:
+
+volumes:
+  postgres_data:

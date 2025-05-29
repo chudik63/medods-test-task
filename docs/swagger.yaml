@@ -1,0 +1,102 @@
+basePath: /v1
+definitions:
+  internal_transport_http.ErrorResponse:
+    properties:
+      error:
+        description: Error message
+        type: string
+    type: object
+  internal_transport_http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  internal_transport_http.TokenResponse:
+    properties:
+      access_token:
+        description: Access token
+        type: string
+      refresh_token:
+        description: Refresh token
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is the test service for providing JWT
+  title: Medods
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and generates access and refresh tokens
+      parameters:
+      - description: User GUID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token & refresh_token
+          schema:
+            $ref: '#/definitions/internal_transport_http.TokenResponse'
+        "400":
+          description: User id is empty
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "500":
+          description: An unexpected error occurred
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes token pair
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token & refresh_token
+          schema:
+            $ref: '#/definitions/internal_transport_http.TokenResponse'
+        "400":
+          description: Token is invalid
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "403":
+          description: Session is invalid
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+        "500":
+          description: An unexpected error occurred
+          schema:
+            $ref: '#/definitions/internal_transport_http.ErrorResponse'
+      summary: RefreshToken
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
